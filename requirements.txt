@@ -1,6 +1,12 @@
 Flask==2.2.5
-tensorflow==2.20.0
-opencv-python==4.10.0.84
+gunicorn
+tensorflow-cpu==2.12.0
+opencv-python-headless==4.10.0.84
 requests==2.32.4
 streamlink==8.2.1
-tf_keras==2.20.1
+tf_keras
+numpy
+pandas
+Pillow
+h5py
+scikit-learn
