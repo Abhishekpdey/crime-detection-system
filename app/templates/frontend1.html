@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crime Detection System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+        :root {
+            --bg: #07111f;
+            --bg-alt: #0f1f34;
+            --panel: rgba(7, 17, 31, 0.72);
+            --line: rgba(148, 182, 214, 0.18);
+            --text: #eef6ff;
+            --muted: #99afc7;
+            --accent: #f65f4c;
+            --accent-2: #ffbf69;
+            --accent-soft: rgba(246, 95, 76, 0.14);
+            --danger: #ff7b72;
+            --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+        }
+
+        body.light-theme {
+            --bg: #f2f6fb;
+            --bg-alt: #dfe9f4;
+            --panel: rgba(255, 255, 255, 0.82);
+            --line: rgba(24, 54, 83, 0.1);
+            --text: #10253d;
+            --muted: #54708e;
+            --accent: #d84636;
+            --accent-2: #f39a3f;
+            --accent-soft: rgba(216, 70, 54, 0.1);
+            --danger: #c63b32;
+            --shadow: 0 24px 60px rgba(38, 74, 109, 0.16);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: 'Manrope', sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(246, 95, 76, 0.18), transparent 30%),
+                radial-gradient(circle at top right, rgba(255, 191, 105, 0.18), transparent 28%),
+                linear-gradient(140deg, var(--bg), var(--bg-alt));
+            overflow-x: hidden;
+            transition: background 0.35s ease, color 0.35s ease;
+        }
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            width: 380px;
+            height: 380px;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.22;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::before {
+            top: -120px;
+            left: -100px;
+            background: var(--accent);
+        }
+
+        body::after {
+            right: -120px;
+            bottom: -100px;
+            background: var(--accent-2);
+        }
+
+        .page-shell {
+            position: relative;
+            z-index: 1;
+            width: min(1180px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 28px 0 48px;
+        }
+
+        .topbar,
+        .toolbar,
+        .brand,
+        .button-row,
+        .footer-panel,
+        .section-header,
+        .stream-overlay {
+            display: flex;
+        }
+
+        .topbar {
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .brand {
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-badge {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(145deg, var(--accent), var(--accent-2));
+            color: #fff;
+            box-shadow: var(--shadow);
+            font-size: 22px;
+        }
+
+        .brand-copy h1,
+        .hero-copy h2,
+        .section-header h3,
+        .metric-card strong,
+        .fact-card h4,
+        .status-chip strong {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .brand-copy h1 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .brand-copy p {
+            margin: 2px 0 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .toolbar {
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ghost-pill,
+        .theme-toggle {
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            backdrop-filter: blur(12px);
+            border-radius: 999px;
+        }
+
+        .ghost-pill {
+            padding: 10px 16px;
+            font-size: 0.9rem;
+        }
+
+        .theme-toggle {
+            width: 46px;
+            height: 46px;
+            cursor: pointer;
+        }
+
+        .hero,
+        .workspace,
+        .fact-grid {
+            display: grid;
+            gap: 22px;
+            margin-bottom: 22px;
+        }
+
+        .hero { grid-template-columns: 1.15fr 0.85fr; }
+        .workspace { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .fact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+
+        .hero-panel,
+        .side-panel,
+        .module,
+        .fact-card,
+        .footer-panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            backdrop-filter: blur(18px);
+            box-shadow: var(--shadow);
+            border-radius: 28px;
+            animation: fadeUp 0.65s ease both;
+        }
+
+        .hero-panel,
+        .side-panel,
+        .module { padding: 24px; }
+
+        .hero-panel {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-panel::after {
+            content: "";
+            position: absolute;
+            inset: auto -80px -90px auto;
+            width: 220px;
+            height: 220px;
+            background: linear-gradient(145deg, rgba(246, 95, 76, 0.2), rgba(255, 191, 105, 0.14));
+            border-radius: 50%;
+        }
+
+        .hero-tag,
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.9rem;
+        }
+
+        .hero-tag {
+            color: var(--accent-2);
+            margin-bottom: 18px;
+        }
+
+        .badge {
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--line);
+            white-space: nowrap;
+            font-size: 0.82rem;
+        }
+
+        .hero-copy h2 {
+            margin: 0;
+            font-size: clamp(2.3rem, 4vw, 4rem);
+            line-height: 0.95;
+            max-width: 11ch;
+        }
+
+        .hero-copy p,
+        .section-header p,
+        .fact-card p,
+        .status-note,
+        .upload-dropzone p {
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .hero-copy p {
+            margin: 18px 0 0;
+            max-width: 58ch;
+        }
+
+        .hero-metrics,
+        .status-stack {
+            display: grid;
+            gap: 14px;
+        }
+
+        .hero-metrics {
+            margin-top: 26px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .metric-card,
+        .status-chip {
+            padding: 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--line);
+        }
+
+        .metric-card span,
+        .status-chip span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        .metric-card strong {
+            display: block;
+            font-size: 1.28rem;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            justify-content: space-between;
+        }
+
+        .status-chip strong {
+            display: block;
+            margin-top: 6px;
+            font-size: 1.1rem;
+        }
+
+        .status-note {
+            padding: 16px;
+            border-radius: 20px;
+            background: linear-gradient(145deg, rgba(246, 95, 76, 0.12), rgba(255, 191, 105, 0.08));
+            border: 1px solid rgba(255, 191, 105, 0.16);
+        }
+
+        .section-header {
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .section-header h3 {
+            margin: 0 0 6px;
+            font-size: 1.35rem;
+        }
+
+        .section-header p { margin: 0; font-size: 0.95rem; }
+
+        .input-shell {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            padding: 12px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--line);
+            margin-bottom: 14px;
+        }
+
+        .input-shell i,
+        .stream-placeholder i,
+        .upload-placeholder i,
+        .fact-card i {
+            color: var(--accent-2);
+        }
+
+        #urlInput {
+            width: 100%;
+            background: transparent;
+            border: 0;
+            outline: 0;
+            color: var(--text);
+            font-size: 0.98rem;
+            font-family: inherit;
+        }
+
+        #urlInput::placeholder { color: var(--muted); }
+
+        .button-row {
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .btn-custom,
+        .btn-secondary {
+            width: 100%;
+            border: 0;
+            border-radius: 18px;
+            padding: 14px 18px;
+            font-family: inherit;
+            font-size: 0.96rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-custom {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: #fff;
+            box-shadow: 0 14px 34px rgba(246, 95, 76, 0.28);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            border: 1px solid var(--line);
+        }
+
+        .btn-custom:hover,
+        .btn-secondary:hover,
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+        }
+
+        .stream-frame,
+        .upload-card {
+            border-radius: 24px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+            border: 1px solid var(--line);
+            overflow: hidden;
+        }
+
+        .stream-frame {
+            position: relative;
+            min-height: 320px;
+            display: grid;
+            place-items: center;
+        }
+
+        .stream-placeholder,
+        .upload-placeholder {
+            padding: 30px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .stream-placeholder i,
+        .upload-placeholder i {
+            font-size: 2.4rem;
+            margin-bottom: 14px;
+        }
+
+        #streamView {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+            min-height: 320px;
+        }
+
+        .stream-overlay {
+            position: absolute;
+            left: 16px;
+            right: 16px;
+            bottom: 16px;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .overlay-pill {
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: rgba(7, 17, 31, 0.78);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 180px;
+        }
+
+        .overlay-pill small {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 5px;
+            font-size: 0.76rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .stream-status,
+        .result {
+            margin-top: 14px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            min-height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .crime-alert {
+            margin-top: 14px;
+            padding: 15px 18px;
+            border-radius: 18px;
+            background: rgba(255, 123, 114, 0.12);
+            color: var(--danger);
+            border: 1px solid rgba(255, 123, 114, 0.26);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            display: none;
+            animation: pulse 1.5s infinite;
+            text-align: center;
+        }
+
+        .upload-card { padding: 18px; }
+
+        .upload-dropzone {
+            border-radius: 20px;
+            border: 1px dashed rgba(255, 191, 105, 0.4);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 26px;
+            text-align: center;
+        }
+
+        #fileInput { display: none; }
+
+        #preview {
+            display: none;
+            margin-top: 18px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            background: #000;
+        }
+
+        #uploadedVideo {
+            width: 100%;
+            display: block;
+            max-height: 330px;
+            object-fit: cover;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 14px;
+            color: var(--muted);
+            padding: 16px;
+        }
+
+        .loading i {
+            font-size: 1.6rem;
+            color: var(--accent-2);
+            margin-top: 8px;
+        }
+
+        .fact-card { padding: 22px; }
+
+        .fact-card i {
+            width: 46px;
+            height: 46px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: var(--accent-soft);
+            margin-bottom: 16px;
+        }
+
+        .fact-card h4 {
+            margin: 0 0 10px;
+            font-size: 1.06rem;
+        }
+
+        .fact-card p { margin: 0; }
+
+        .footer-panel {
+            padding: 18px 22px;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .footer-panel strong { color: var(--text); }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 980px) {
+            .hero,
+            .workspace,
+            .fact-grid,
+            .hero-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-copy h2 { max-width: none; }
+        }
+
+        @media (max-width: 640px) {
+            .page-shell { width: min(100% - 20px, 1180px); padding-top: 20px; }
+
+            .topbar,
+            .section-header,
+            .footer-panel,
+            .button-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .toolbar { justify-content: space-between; }
+            .stream-frame,
+            #streamView { min-height: 260px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-badge">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="brand-copy">
+                    <h1>Crime Detection System</h1>
+                    <p>AI-assisted monitoring for live streams and uploaded footage</p>
+                </div>
+            </div>
+            <div class="toolbar">
+                <div class="ghost-pill">Realtime monitoring workspace</div>
+                <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                    <i class="fas fa-adjust"></i>
+                </button>
+            </div>
+        </header>
+
+        <section class="hero">
+            <div class="hero-panel">
+                <div class="hero-tag">
+                    <i class="fas fa-bolt"></i>
+                    Smart video surveillance
+                </div>
+                <div class="hero-copy">
+                    <h2>See threats earlier. Respond faster.</h2>
+                    <p>Monitor live CCTV feeds, review recorded footage, and surface possible incidents from one focused workspace. The interface keeps detection status, stream control, and upload analysis clear at a glance.</p>
+                </div>
+                <div class="hero-metrics">
+                    <div class="metric-card">
+                        <span>Monitoring Modes</span>
+                        <strong>Live + Upload</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span>Detection Signal</span>
+                        <strong>Frame-Based AI</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span>Alert Output</span>
+                        <strong>Visual + Audio</strong>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="side-panel">
+                <div class="status-stack">
+                    <div class="status-chip">
+                        <span>System Focus</span>
+                        <strong>Continuous scene awareness</strong>
+                    </div>
+                    <div class="status-chip">
+                        <span>Recommended Flow</span>
+                        <strong>Start a stream or upload a sample clip</strong>
+                    </div>
+                    <div class="status-chip">
+                        <span>Current Goal</span>
+                        <strong>Reduce detection friction for operators</strong>
+                    </div>
+                </div>
+                <div class="status-note">
+                    Use the live panel for direct camera feeds or test the model quickly with a recorded video clip. Alerts are surfaced inline and paired with the alarm sound when a crime pattern is detected.
+                </div>
+            </aside>
+        </section>
+
+        <section class="workspace">
+            <div class="module">
+                <div class="section-header">
+                    <div>
+                        <h3><i class="fas fa-video"></i> Live CCTV Monitoring</h3>
+                        <p>Connect a stream URL and watch the feed with an always-visible prediction overlay.</p>
+                    </div>
+                    <div class="badge">Stream mode</div>
+                </div>
+
+                <div class="input-shell">
+                    <i class="fas fa-link"></i>
+                    <input type="text" id="urlInput" placeholder="Paste CCTV stream URL, RTSP link, or supported public camera stream">
+                </div>
+
+                <div class="button-row">
+                    <button class="btn-custom" onclick="startStream()">
+                        <i class="fas fa-play"></i> Start Monitoring
+                    </button>
+                    <button class="btn-secondary" onclick="stopStream()">
+                        <i class="fas fa-stop"></i> Stop Stream
+                    </button>
+                </div>
+
+                <div class="stream-frame">
+                    <img id="streamView" alt="Live stream view">
+                    <div class="stream-placeholder" id="streamPlaceholder">
+                        <i class="fas fa-satellite-dish"></i>
+                        <h4>Feed preview appears here</h4>
+                        <p>Once a live stream connects, frames and prediction status will update in this panel.</p>
+                    </div>
+                    <div class="stream-overlay">
+                        <div class="overlay-pill">
+                            <small>Prediction</small>
+                            <div id="streamPrediction">No prediction yet</div>
+                        </div>
+                        <div class="overlay-pill">
+                            <small>Mode</small>
+                            <div>Live CCTV Analysis</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stream-status" id="streamStatus">Waiting for a stream source.</div>
+                <div class="crime-alert" id="streamAlert">
+                    <i class="fas fa-triangle-exclamation"></i> CRIME DETECTED IN LIVE STREAM
+                </div>
+            </div>
+
+            <div class="module">
+                <div class="section-header">
+                    <div>
+                        <h3><i class="fas fa-film"></i> Recorded Footage Analysis</h3>
+                        <p>Upload a video clip to run offline analysis and surface a detection result quickly.</p>
+                    </div>
+                    <div class="badge">Upload mode</div>
+                </div>
+
+                <div class="upload-card">
+                    <div class="upload-dropzone">
+                        <div class="upload-placeholder">
+                            <i class="fas fa-cloud-arrow-up"></i>
+                            <h4>Drop in a test video or browse from your device</h4>
+                            <p>Supported video files will be previewed before analysis starts automatically.</p>
+                        </div>
+                        <button class="btn-custom" type="button" onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-upload"></i> Choose Video
+                        </button>
+                        <input type="file" name="file" id="fileInput" accept="video/*" onchange="handleVideoUpload()">
+                    </div>
+
+                    <div id="preview">
+                        <video id="uploadedVideo" controls autoplay muted playsinline></video>
+                    </div>
+
+                    <div class="loading" id="loading">
+                        <p>Running model inference on uploaded footage...</p>
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+
+                    <div class="result" id="result">Upload a video to begin analysis.</div>
+                    <div class="crime-alert" id="uploadAlert">
+                        <i class="fas fa-bell"></i> CRIME DETECTED IN UPLOADED FOOTAGE
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="fact-grid">
+            <article class="fact-card">
+                <i class="fas fa-eye"></i>
+                <h4>Operator-first visibility</h4>
+                <p>The layout keeps live state, current prediction, and upload results visible without making users hunt through the page.</p>
+            </article>
+            <article class="fact-card">
+                <i class="fas fa-wave-square"></i>
+                <h4>Fast signal feedback</h4>
+                <p>Visual alerts and the alarm sound give immediate feedback when the model identifies suspicious activity.</p>
+            </article>
+            <article class="fact-card">
+                <i class="fas fa-layer-group"></i>
+                <h4>One workspace, two modes</h4>
+                <p>Teams can validate the system using recorded evidence first, then move to live stream monitoring without switching tools.</p>
+            </article>
+        </section>
+
+        <footer class="footer-panel">
+            <div><strong>Crime Detection System</strong> built for demo and prototype workflows.</div>
+            <div>Human review is still essential before acting on any alert.</div>
+        </footer>
+    </div>
+
+    <audio id="alarmSound" src="{{ url_for('static', filename='alarm.mp3') }}" preload="auto"></audio>
+
+    <script>
+        let predictionInterval;
+        let isLightTheme = false;
+
+        function setStatus(message, isError = false) {
+            const status = document.getElementById('streamStatus');
+            status.textContent = message;
+            status.style.color = isError ? 'var(--danger)' : 'var(--text)';
+        }
+
+        function startStream() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) {
+                setStatus('Please enter a valid CCTV stream URL.', true);
+                return;
+            }
+
+            setStatus('Connecting to stream...');
+
+            fetch('/start_live_stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    setStatus(`Error: ${data.error}`, true);
+                    return;
+                }
+
+                document.getElementById('streamView').style.display = 'block';
+                document.getElementById('streamPlaceholder').style.display = 'none';
+                document.getElementById('streamView').src = '/video_feed';
+                document.getElementById('streamAlert').style.display = 'none';
+                setStatus('Live monitoring active.');
+
+                clearInterval(predictionInterval);
+                predictionInterval = setInterval(checkPrediction, 1000);
+            })
+            .catch(error => {
+                setStatus(`Error: ${error.message}`, true);
+            });
+        }
+
+        function stopStream() {
+            fetch('/stop_live_stream', { method: 'POST' })
+            .then(response => response.json())
+            .then(() => {
+                document.getElementById('streamView').style.display = 'none';
+                document.getElementById('streamView').src = '';
+                document.getElementById('streamPlaceholder').style.display = 'block';
+                document.getElementById('streamAlert').style.display = 'none';
+                document.getElementById('streamPrediction').textContent = 'No prediction yet';
+                clearInterval(predictionInterval);
+                setStatus('Stream stopped. Ready for the next source.');
+            })
+            .catch(error => {
+                setStatus(`Error: ${error.message}`, true);
+            });
+        }
+
+        function checkPrediction() {
+            fetch('/get_current_prediction')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('streamPrediction').textContent = data.prediction;
+                if (data.prediction === 'Crime detected!') {
+                    playAlarm();
+                    document.getElementById('streamAlert').style.display = 'block';
+                } else {
+                    document.getElementById('streamAlert').style.display = 'none';
+                }
+            });
+        }
+
+        function playAlarm() {
+            const alarmSound = document.getElementById('alarmSound');
+            alarmSound.play().catch(function(error) {
+                console.log('Audio playback failed: ' + error);
+            });
+        }
+
+        function handleVideoUpload() {
+            const input = document.getElementById('fileInput');
+            const file = input.files[0];
+            if (!file) {
+                return;
+            }
+
+            const preview = document.getElementById('preview');
+            const video = document.getElementById('uploadedVideo');
+            video.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+            video.play();
+
+            uploadVideo(file);
+        }
+
+        function uploadVideo(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            $('#loading').show();
+            $('#result').text('Preparing uploaded footage...');
+            $('#uploadAlert').hide();
+
+            $.ajax({
+                url: '/predict',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    $('#loading').hide();
+                    $('#result').text(response.result);
+
+                    if (response.result === 'Crime detected!') {
+                        playAlarm();
+                        $('#uploadAlert').show();
+                    }
+                },
+                error: function(xhr) {
+                    $('#loading').hide();
+                    const errorText = xhr.responseJSON && xhr.responseJSON.error
+                        ? xhr.responseJSON.error
+                        : 'Video analysis failed.';
+                    $('#result').text('Error: ' + errorText);
+                }
+            });
+        }
+
+        function toggleTheme() {
+            isLightTheme = !isLightTheme;
+            document.body.classList.toggle('light-theme', isLightTheme);
+        }
+    </script>
+</body>
+</html>
